@@ -1,9 +1,15 @@
+<?php
+date_default_timezone_set('America/Lima');
+
+?>
+
+
 <!DOCTYPE html>
 <html>
 <head>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+    <script src="chart.js"></script>
+    <script src="jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="bootstrap.min.css">
 
 </head>
 <body>
@@ -13,17 +19,10 @@
     <a href="login.php" class="btn btn-primary  ">Iniciar seción o registrarse</a>
   </div>
 
-
-
-
-
   <div class="fluid-container m-7">
     <canvas id="stockChart"></canvas>
   </div>
-  
-
   <script>
-
       // Realizar truncado de tabla al cerrar la página
     window.addEventListener('beforeunload', function() {
       fetch('truncate_table.php')

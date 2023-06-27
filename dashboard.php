@@ -1,84 +1,92 @@
-    <?php
-    session_start();
-    include 'config.php';
+<?php
+date_default_timezone_set('America/Lima');
+session_start();
+include 'config.php';
 
-    // Verificar si el usuario ha iniciado sesión
-    if (!isset($_SESSION['usuario_id'])) {
+// Verificar si el usuario ha iniciado sesión
+if (!isset($_SESSION['usuario_id'])) {
     header("Location: login.php");
     exit();
-    }
+}
 
-    $usuarioId = $_SESSION['usuario_id'];
+$usuarioId = $_SESSION['usuario_id'];
 
-    // Obtener el nombre del usuario
-    $sqlUsuario = "SELECT nombre FROM usuarios WHERE id = $usuarioId";
-    $resultUsuario = $conn->query($sqlUsuario);
-    $nombreUsuario = $resultUsuario->fetch_assoc()['nombre'];
+// Obtener el nombre del usuario
+$sqlUsuario = "SELECT nombre FROM usuarios WHERE id = $usuarioId";
+$resultUsuario = $conn->query($sqlUsuario);
+$nombreUsuario = $resultUsuario->fetch_assoc()['nombre'];
 
-    // Obtener el historial de transacciones del usuario
-    $sqlTransacciones = "SELECT * FROM transacciones WHERE usuario_id = $usuarioId ORDER BY fecha DESC";
-    $resultTransacciones = $conn->query($sqlTransacciones);
-    $transacciones = $resultTransacciones->fetch_all(MYSQLI_ASSOC);
+// Obtener el saldo del usuario
+$sqlSaldo = "SELECT saldo FROM usuarios WHERE id = $usuarioId";
+$resultSaldo = $conn->query($sqlSaldo);
+$saldo = $resultSaldo->fetch_assoc()['saldo'];
 
-    $conn->close();
-    ?>
+// Obtener el historial de transacciones del usuario
+$sqlTransacciones = "SELECT * FROM transacciones WHERE usuario_id = $usuarioId ORDER BY fecha DESC";
+$resultTransacciones = $conn->query($sqlTransacciones);
+$transacciones = $resultTransacciones->fetch_all(MYSQLI_ASSOC);
 
-    <!DOCTYPE html>
-    <html>
-    <head>
+$conn->close();
+?>
+
+<!DOCTYPE html>
+<html>
+<head>
     <meta charset="UTF-8">
     <title>Panel de Control</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="bootstrap.min.css">
+    <script src="chart.js"></script>
+    <script src="jquery-3.6.0.min.js"></script>
 
     <style>
         .container {
-        margin-top: 50px;
+            margin-top: 50px;
         }
+
         canvas {
-        max-width: 100%;
-        margin: 0 auto;
-        height: 500px; 
+            max-width: 100%;
+            margin: 0 auto;
+            height: 500px;
         }
     </style>
-    </head>
-    <body> 
+</head>
+<body>
 
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="#">Panel de Control</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">Panel de Control</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ml-auto">
             <li class="nav-item">
-            <a class="nav-link" href="#">Inicio</a>
+                <a class="nav-link" href="#">Inicio</a>
             </li>
             <li class="nav-item">
-            <a class="nav-link" href="#">Perfil</a>
+                <a class="nav-link" href="#">Perfil</a>
             </li>
             <li class="nav-item">
-            <a class="nav-link" href="logout.php">Cerrar sesión</a>
+                <a class="nav-link" href="logout.php">Cerrar sesión</a>
             </li>
         </ul>
-        </div>
-    </nav>
-    <div class="container">
+    </div>
+</nav>
+<div class="container">
     <h2>Bienvenido, <?php echo $nombreUsuario; ?></h2>
     <div class="fluid-container">
-    <h3 class="text-center">Gráfico de la Bolsa de Valores</h3>
-    <canvas id="stockChart"></canvas>
+        <h3 class="text-center">Gráfico de la Bolsa de Valores</h3>
+        <canvas id="stockChart"></canvas>
     </div>
 
     <div class="container mt-4">
         <div class="row justify-content-center">
             <div class="col-md-6">
-            <div class="text-center">
-                <h4 class=" text-white">Saldo: $<span id="balance">0.00</span></h4>
-                <button class="btn btn-success" id="startButton">Iniciar Trading</button>
-                <button class="btn btn-danger" id="stopButton" disabled>Detener Trading</button>
-            </div>
+                <div class="text-center">
+                    <h4 class="text-white">Saldo: <?php echo $saldo; ?> <span id="saldo"></span></h4>
+                    <button class="btn btn-success" id="startButton">Iniciar Trading</button>
+                    <button class="btn btn-danger" id="stopButton" disabled>Detener Trading</button>
+                </div>
             </div>
         </div>
     </div>
@@ -94,86 +102,130 @@
         <tbody id="transactionHistory">
         <?php foreach ($transacciones as $transaccion): ?>
             <tr>
-            <td><?php echo $transaccion['descripcion']; ?></td>
-            <td><?php echo $transaccion['monto']; ?></td>
-            <td><?php echo $transaccion['fecha']; ?></td>
+                <td><?php echo $transaccion['descripcion']; ?></td>
+                <td><?php echo number_format($transaccion['monto'], 2); ?></td>
+                <td><?php echo date('d/m/Y H:i:s', strtotime($transaccion['fecha'])); ?></td>  
             </tr>
         <?php endforeach; ?>
         </tbody>
     </table>
-    </div>
-   
+</div>
 
-    <script>
-        
-        // Variables globales
-    var saldo = 0;
-    var acciones = 0;
-    function buyStocks(price) {
-        // Lógica de compra de acciones
+<script>
+    document.getElementById('stopButton').addEventListener('click', function () {
+        clearInterval(intervalId); // Detener el intervalo
+        document.getElementById('startButton').disabled = false;
+        document.getElementById('stopButton').disabled = true;
+    });
+
+    document.getElementById('startButton').addEventListener('click', function () {
+        intervalId = setInterval(getUpdatedPrices, 1000); // Ejecutar la función getUpdatedPrices cada 5 segundos
+        document.getElementById('startButton').disabled = true;
+        document.getElementById('stopButton').disabled = false;
+    });
+     // Función para actualizar el saldo en la interfaz
+    function updateBalance(amount) {
+        saldo += amount;
+        document.getElementById('saldo').textContent = saldo;
     }
 
-    function sellStocks(price) {
-        // Lógica de venta de acciones
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         var ctx = document.getElementById('stockChart').getContext('2d');
         var stockData = {
-        labels: [],
-        datasets: [{
-            label: 'S&P 500',
-            data: [],
-            borderColor: 'red',
-            backgroundColor: 'transparent',
-        }, {
-            label: 'Dow Jones',
-            data: [],
-            borderColor: 'blue',
-            backgroundColor: 'transparent',
-        }]
+            labels: [],
+            datasets: [{
+                label: 'S&P 500',
+                data: [],
+                borderColor: 'red',
+                backgroundColor: 'transparent',
+            }, {
+                label: 'Dow Jones',
+                data: [],
+                borderColor: 'blue',
+                backgroundColor: 'transparent',
+            }]
         };
 
         var stockChart = new Chart(ctx, {
-        type: 'line',
-        data: stockData,
-        options: {
-            responsive: true,
-            scales: {
-            y: {
-                beginAtZero: true
+            type: 'line',
+            data: stockData,
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
             }
-            }
-        }
         });
 
         function addDataToChart(label, sp500, dowJones) {
-        stockData.labels.push(label);
-        stockData.datasets[0].data.push(sp500);
-        stockData.datasets[1].data.push(dowJones);
+            stockData.labels.push(label);
+            stockData.datasets[0].data.push(sp500);
+            stockData.datasets[1].data.push(dowJones);
 
-        if (stockData.labels.length > 50) {
-            stockData.labels.shift();
-            stockData.datasets[0].data.shift();
-            stockData.datasets[1].data.shift();
-        }
+            if (stockData.labels.length > 50) {
+                stockData.labels.shift();
+                stockData.datasets[0].data.shift();
+                stockData.datasets[1].data.shift();
+            }
 
-        stockChart.update(); // Actualizar la gráfica con el nuevo valor
+            stockChart.update(); // Actualizar la gráfica con el nuevo valor
         }
 
         function fetchData() {
-        fetch('fetch_data.php')
-            .then(response => response.json())
-            .then(data => {
-                stockData.labels = data.labels.reverse();
-                stockData.datasets[0].data = data.sp500.reverse();
-                stockData.datasets[1].data = data.dowJones.reverse();
+            fetch('fetch_data.php')
+                .then(response => response.json())
+                .then(data => {
+                    stockData.labels = data.labels.reverse();
+                    stockData.datasets[0].data = data.sp500.reverse();
+                    stockData.datasets[1].data = data.dowJones.reverse();
 
-                stockChart.update(); // Actualizar la gráfica con los datos recuperados
+                    stockChart.update(); // Actualizar la gráfica con los datos recuperados
+                });
+        }
+
+        function generateRandomData() {
+            var currentTime = new Date();
+            var currentLabel = currentTime.getHours() + ':' + currentTime.getMinutes();
+            var newPriceSAndP = getRandomNumberInRange(1000, 5000);
+            var newPriceDowJones = getRandomNumberInRange(20000, 33000);
+
+            addDataToChart(currentLabel, newPriceSAndP, newPriceDowJones);
+
+            $.ajax({
+                url: 'insert_data.php',
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    label: currentLabel,
+                    sp500: newPriceSAndP,
+                    dowJones: newPriceDowJones
+                },
+                success: function (data) {
+                    console.log(data);
+                },
+                error: function (error) {
+                    console.error(error);
+                }
             });
         }
 
-        function addTransactionToHistory(transaction) {
+
+        var intervalId = setInterval(generateRandomData, 2000); // Generar datos aleatorios cada 5 segundos
+
+        function getRandomNumberInRange(min, max) {
+            return Math.floor(Math.random() * (max - min + 1) + min);
+        }
+
+        fetchData(); // Obtener los datos iniciales del gráfico desde la base de datos
+
+        setInterval(fetchData, 3000); // Actualizar los datos del gráfico cada 5 segundos
+    });
+
+    
+
+    function addTransactionToHistory(transaction) {
         var row = document.createElement('tr');
         var descriptionCell = document.createElement('td');
         var amountCell = document.createElement('td');
@@ -188,148 +240,87 @@
         row.appendChild(dateCell);
 
         document.getElementById('transactionHistory').appendChild(row);
-        }
+    }
+    var acciones = 0;
+    function buyStocks(price) {
+        if (price < 50000 && saldo >= price) {
+            acciones += 1;
+            saldo -= price;
+            updateBalance(-price);
 
-        function simulateTrading() {
-    // Obtener los precios actuales de las acciones
-    var sp500Price = stockData.datasets[0].data[stockData.datasets[0].data.length - 1];
-    var dowJonesPrice = stockData.datasets[1].data[stockData.datasets[1].data.length - 1];
-
-    for (var i = 0; i < getRandomNumberInRange(3, 4); i++) {
-        if (sp500Price < 3000) {
-            buyStocks(sp500Price);
-        } else if (sp500Price > 3500) {
-            sellStocks(sp500Price);
+            registerTransaction("Compra de acciones", -price);
         }
     }
 
-    fetch('simulate_trading.php')
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                alert(data.message);
-                // Actualizar la tabla de transacciones
-                fetchTransactionHistory();
-            } else {
-                alert(data.message);
-            }
-        })
-        .catch(error => {
-            console.error(error);
-            alert('Ocurrió un error al simular el trading.');
-        });
-}
-function getRandomNumberInRange(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+    function sellStocks(price) {
+        if (price > 5000 && acciones > 0) {
+            acciones -= 1;
+            saldo += price;
+            updateBalance(price);
 
-
-        function fetchTransactionHistory() {
-        fetch('fetch_transactions.php')
-            .then(response => response.json())
-            .then(data => {
-            // Limpiar la tabla de transacciones
-            const tableBody = document.getElementById('transactionHistory');
-            tableBody.innerHTML = '';
-
-            // Agregar las transacciones al cuerpo de la tabla
-            data.forEach(transaction => {
-                const row = document.createElement('tr');
-
-                const descriptionCell = document.createElement('td');
-                descriptionCell.textContent = transaction.descripcion;
-                row.appendChild(descriptionCell);
-
-                const amountCell = document.createElement('td');
-                amountCell.textContent = transaction.monto;
-                row.appendChild(amountCell);
-
-                const dateCell = document.createElement('td');
-                dateCell.textContent = transaction.fecha;
-                row.appendChild(dateCell);
-
-                tableBody.appendChild(row);
-            });
-            })
-            .catch(error => {
-            console.error(error);
-            alert('Ocurrió un error al obtener el historial de transacciones.');
-            });
+            registerTransaction("Venta de acciones", +price);
         }
+    }
 
-        function initializeBalance() {
-        var lastTransaction = <?php echo json_encode(end($transacciones)); ?>;
-        var initialBalance = 50000;
+    function robotTrading(newPriceSAndP, newPriceDowJones) {
 
-        if (lastTransaction !== null) {
-            initialBalance = parseFloat(lastTransaction.monto);
+        // Lógica del robot
+        if (newPriceDowJones < 21000 ) {
+            buyStocks(newPriceDowJones);
+
+        } else if (newPriceDowJones > 30000) {
+            sellStocks(newPriceDowJones);
         }
+    }
 
-        document.getElementById('balance').textContent = initialBalance.toFixed(1);
+    function registerTransaction(description, amount) {
+        var transaction = {
+            descripcion: description,
+            monto: amount,
+            fecha: new Date().toLocaleString()
+        };
 
-        if (initialBalance > 0) {
-            document.getElementById('startButton').disabled = false;
-        } else {
-            console.log('No hay saldo disponible para iniciar la simulación.');
-        }
-        }
+        addTransactionToHistory(transaction);
 
-        initializeBalance();
-        fetchData(); // Obtener los datos iniciales del gráfico desde la base de datos
+        // Obtén la fecha actual en formato de cadena
+        var currentDate = "<?php echo date('Y-m-d H:i:s'); ?>";
+        transaction.fecha = currentDate;
 
-        function generateRandomData() {
-        var currentTime = new Date();
-        var currentLabel = currentTime.getHours() + ':' + currentTime.getMinutes();
-        var newPriceSAndP = getRandomNumberInRange(1000, 5000);
-        var newPriceDowJones = getRandomNumberInRange(20000, 33000);
 
-        addDataToChart(currentLabel, newPriceSAndP, newPriceDowJones);
-
+        // Llamada AJAX para guardar la transacción en la base de datos
         $.ajax({
-            url: 'insert_data.php',
+            url: 'save_transaction.php', // Ruta del script PHP que guarda la transacción en la base de datos
             type: 'POST',
             dataType: 'json',
-            data: {
-            label: currentLabel,
-            sp500: newPriceSAndP,
-            dowJones: newPriceDowJones
+            data: transaction,
+            success: function (data) {
+                console.log(data);
+                updateBalance(amount);
             },
-            success: function(data) {
-            console.log(data);
-            },
-            error: function(error) {
-            console.error(error);
+            error: function (error) {
+                console.error(error);
             }
         });
-        }
-
-        var intervalId = null;
-
-        function startTrading() {
-        intervalId = setInterval(generateRandomData, 1000);
-        simulateTrading();
-
-        document.getElementById('startButton').disabled = true;
-        document.getElementById('stopButton').disabled = false;
-        }
-
-        function stopTrading() {
-        clearInterval(intervalId);
-        intervalId = null;
-
-        document.getElementById('startButton').disabled = false;
-        document.getElementById('stopButton').disabled = true;
-        }
-
-        document.getElementById('startButton').addEventListener('click', startTrading);
-        document.getElementById('stopButton').addEventListener('click', stopTrading);
-
-        setInterval(fetchData, 5000); // Actualizar los datos del gráfico cada 5 segundos
-    });
-
-    function getRandomNumberInRange(min, max) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
     }
-    </script>
-    </body>
-    </html>
+
+    function getUpdatedPrices() {
+        // Realizar una llamada AJAX al servidor para obtener los precios actualizados desde la base de datos
+        $.ajax({
+            url: 'fetch_prices.php', // Ruta del script PHP que obtiene los precios actualizados desde la base de datos
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                var newPriceSAndP = response.sp500;
+                var newPriceDowJones = response.dowJones;
+                
+                robotTrading(newPriceSAndP, newPriceDowJones);
+            },
+            error: function(error) {
+                console.error(error);
+            }
+        });
+    }
+</script>
+
+</body>
+</html>
