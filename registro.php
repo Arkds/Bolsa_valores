@@ -13,7 +13,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $sql = "INSERT INTO usuarios (nombre, email, contrasena) VALUES ('$nombre', '$email', '$hashedContrasena')";
 
   if ($conn->query($sql) === TRUE) {
-    echo "Registro exitoso";
+    header("Location: login.php");
+    exit;
   } else {
     echo "Error al registrar el usuario: " . $conn->error;
   }
