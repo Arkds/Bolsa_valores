@@ -14,30 +14,29 @@ $usuarioId = $_SESSION['usuario_id'];
 // Obtener el nombre del usuario
 $sqlUsuario = "SELECT nombre FROM usuarios WHERE id = $usuarioId";
 $resultUsuario = $conn->query($sqlUsuario);
-$nombreUsuario = $resultUsuario->fetch_assoc()['nombre'];
+$usuarioData = $resultUsuario->fetch_assoc();
+$nombreUsuario = $usuarioData['nombre'];
+
 
 // Obtener el saldo del usuario
 $sqlSaldo = "SELECT saldo FROM usuarios WHERE id = $usuarioId";
 $resultSaldo = $conn->query($sqlSaldo);
 $saldo = $resultSaldo->fetch_assoc()['saldo'];
 
-// Obtener el historial de transacciones del usuario
-$sqlTransacciones = "SELECT * FROM transacciones WHERE usuario_id = $usuarioId ORDER BY fecha DESC";
-$resultTransacciones = $conn->query($sqlTransacciones);
-$transacciones = $resultTransacciones->fetch_all(MYSQLI_ASSOC);
 
-$conn->close();
 ?>
 
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
     <title>Panel de Control</title>
     <link rel="stylesheet" href="bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="chart.js"></script>
     <script src="jquery-3.6.0.min.js"></script>
-
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    
     <style>
         .container {
             margin-top: 50px;
@@ -90,28 +89,65 @@ $conn->close();
             </div>
         </div>
     </div>
-    <h3>Historial de Transacciones</h3>
-    <table class="table table-striped">
-        <thead>
-        <tr>
-            <th>Descripción</th>
-            <th>Monto</th>
-            <th>Fecha</th>
-        </tr>
-        </thead>
-        <tbody id="transactionHistory">
-        <?php foreach ($transacciones as $transaccion): ?>
-            <tr>
-                <td><?php echo $transaccion['descripcion']; ?></td>
-                <td><?php echo number_format($transaccion['monto'], 2); ?></td>
-                <td><?php echo date('d/m/Y H:i:s', strtotime($transaccion['fecha'])); ?></td>  
-            </tr>
-        <?php endforeach; ?>
-        </tbody>
-    </table>
+
+    <div class="container mt-4" id="regis">
+        <h3>Historial de Transacciones</h3>
+        <table class="table table-striped">
+            <tbody >
+                <div class="container">
+            <div class="row">
+                
+                <div class=" span col-md-3">
+                    <select id="resultsPerPage" class="form-control">
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="30">30</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-12">
+                    <div id="tableData"></div>
+                </div>
+            </div>
+        </div>
+
+        
+            </tbody>
+        </table>
+
+    </div>
+    
 </div>
 
 <script>
+
+
+    $(document).ready(function() {
+            loadTableData(1);
+            $("#resultsPerPage").on("change", function() {
+                loadTableData(1);
+            });
+
+    });
+
+    function loadTableData(page) {
+        var searchInput = $("#searchInput").val();
+        var resultsPerPage = $("#resultsPerPage").val();
+        $.ajax({
+            url: "get_data.php",
+            type: "POST",
+            data: {page: page, resultsPerPage: resultsPerPage},
+            success: function(response) {
+                $("#tableData").html(response);
+            }
+        });
+     }
+
+
+
+
+////////////////////////////////////////////////////
     document.getElementById('stopButton').addEventListener('click', function () {
         clearInterval(intervalId); // Detener el intervalo
         document.getElementById('startButton').disabled = false;
@@ -239,7 +275,9 @@ $conn->close();
         row.appendChild(amountCell);
         row.appendChild(dateCell);
 
-        document.getElementById('transactionHistory').appendChild(row);
+        loadTableData(1);
+
+        //document.getElementById('transactionHistory').appendChild(row);
     }
     var acciones = 0;
     function buyStocks(price) {
